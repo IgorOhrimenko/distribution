@@ -350,7 +350,16 @@ func (bw *blobWriter) moveBlob(ctx context.Context, desc distribution.Descriptor
 		if err == nil {
 			return nil
 		}
-		dcontext.GetLogger(ctx).WithError(err).Warnf("moving blob %s failed, retrying in %s", desc.Digest, delay)
+		if ctx.Err() != nil {
+			return err
+		}
+		dcontext.GetLoggerWithFields(ctx,
+			map[interface{}]interface{}{
+				"upload.id": bw.ID(),
+				"digest":    desc.Digest,
+			}, "upload.id", "digest").
+			WithError(err).
+			Warnf("moving blob failed, retrying in %s", delay)
 		select {
 		case <-ctx.Done():
 			return err
